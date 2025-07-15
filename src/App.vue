@@ -81,8 +81,7 @@ onMounted(() => {
       console.log('飞书SDK已加载，开始获取用户信息')
       fetchUserInfo()
     } else {
-      console.log('等待飞书SDK加载...')
-      setTimeout(checkSDKAndInit, 100)
+      alert("请在飞书应用中打开")
     }
   }
   
