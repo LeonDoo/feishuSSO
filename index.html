@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8">
     <link rel="icon" href="/favicon.ico">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vite App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>FFCRM系统</title>
+    <!-- 应用标题将在Vue应用加载后更新 -->
+    
+    <!-- 引入VConsole用于调试 -->
+    <script src="https://unpkg.com/vconsole/dist/vconsole.min.js"></script>
+    <script>
+      // 初始化VConsole
+      var vConsole = new VConsole();
+      console.log('VConsole已初始化');
+    </script>
+    
+    <!-- 引入飞书H5 JSSDK -->
+    <script type="text/javascript" src="https://lf1-cdn-tos.bytegoofy.com/goofy/lark/op/h5-js-sdk-1.5.26.js"></script>
   </head>
   <body>
     <div id="app"></div>
