@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>授权流程测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .step {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .step h4 {
+            margin: 0 0 5px 0;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 授权流程测试工具</h1>
+        
+        <div class="test-section">
+            <h3>1. 模拟授权码回调</h3>
+            <p>这个工具会模拟从飞书授权页回调回来的情况，帮助你测试授权流程。</p>
+            
+            <input type="text" id="testCode" value="test_auth_code_12345" placeholder="输入测试授权码">
+            <input type="text" id="testState" value="test_state_67890" placeholder="输入测试state">
+            
+            <button onclick="simulateAuthCallback()">模拟授权回调</button>
+            <button onclick="clearSession()">清除Session</button>
+            
+            <div id="authResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 当前Session状态</h3>
+            <button onclick="checkSession()">检查Session</button>
+            <div id="sessionResult" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 测试步骤说明</h3>
+            <div class="step">
+                <h4>步骤1: 清除Session</h4>
+                <p>点击"清除Session"按钮，确保没有旧的用户信息</p>
+            </div>
+            <div class="step">
+                <h4>步骤2: 模拟授权回调</h4>
+                <p>点击"模拟授权回调"按钮，模拟从飞书授权页回调</p>
+            </div>
+            <div class="step">
+                <h4>步骤3: 检查结果</h4>
+                <p>查看控制台日志和测试结果，确认用户信息是否正确获取和显示</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showResult(elementId, content, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.textContent = content;
+            element.className = `result ${type}`;
+        }
+
+        function clearSession() {
+            try {
+                sessionStorage.removeItem('feishu_user_info');
+                localStorage.removeItem('feishu_user_info');
+                localStorage.removeItem('feishu_appid');
+                localStorage.removeItem('feishu_state');
+                showResult('sessionResult', '✅ Session已清除', 'success');
+                console.log('Session已清除');
+            } catch (error) {
+                showResult('sessionResult', `❌ 清除Session失败: ${error.message}`, 'error');
+            }
+        }
+
+        function checkSession() {
+            try {
+                const sessionUserInfo = sessionStorage.getItem('feishu_user_info');
+                const localUserInfo = localStorage.getItem('feishu_user_info');
+                const appId = localStorage.getItem('feishu_appid');
+                const state = localStorage.getItem('feishu_state');
+
+                let result = 'Session状态检查:\n\n';
+                result += `sessionStorage.feishu_user_info: ${sessionUserInfo ? '有数据' : '无数据'}\n`;
+                result += `localStorage.feishu_user_info: ${localUserInfo ? '有数据' : '无数据'}\n`;
+                result += `localStorage.feishu_appid: ${appId || '无数据'}\n`;
+                result += `localStorage.feishu_state: ${state || '无数据'}\n\n`;
+
+                if (sessionUserInfo) {
+                    result += `Session用户信息:\n${JSON.stringify(JSON.parse(sessionUserInfo), null, 2)}\n`;
+                }
+                if (localUserInfo) {
+                    result += `Local用户信息:\n${JSON.stringify(JSON.parse(localUserInfo), null, 2)}\n`;
+                }
+
+                showResult('sessionResult', result, 'info');
+            } catch (error) {
+                showResult('sessionResult', `❌ 检查Session失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function simulateAuthCallback() {
+            try {
+                const code = document.getElementById('testCode').value;
+                const state = document.getElementById('testState').value;
+
+                if (!code || !state) {
+                    showResult('authResult', '请输入授权码和state', 'error');
+                    return;
+                }
+
+                showResult('authResult', '正在模拟授权回调...', 'info');
+
+                // 保存state到localStorage
+                localStorage.setItem('feishu_state', state);
+
+                // 构建回调URL
+                const callbackUrl = `${window.location.origin}${window.location.pathname}?code=${code}&state=${state}`;
+                
+                showResult('authResult', 
+                    `✅ 模拟授权回调成功!\n\n` +
+                    `回调URL: ${callbackUrl}\n\n` +
+                    `请复制这个URL到浏览器地址栏，然后按回车键来模拟授权回调。\n\n` +
+                    `或者点击下面的链接:\n` +
+                    `<a href="${callbackUrl}" target="_blank">${callbackUrl}</a>`, 
+                    'success'
+                );
+
+                console.log('模拟授权回调URL:', callbackUrl);
+                console.log('请访问上述URL来测试授权流程');
+
+            } catch (error) {
+                showResult('authResult', `❌ 模拟授权回调失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('授权流程测试工具已加载');
+            checkSession();
+        });
+    </script>
+</body>
+</html> 

@@ -68,8 +68,21 @@ const logout = () => {
   console.log('用户已登出')
 }
 
+// 清除Session功能（用于调试）
+const clearSession = () => {
+  feishuAuth.clearUserInfo()
+  userInfo.value = {
+    name: '游客用户',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
+    welcomeText: 'Session已清除'
+  }
+  loadError.value = null
+  isLoading.value = false
+  console.log('Session已清除')
+}
+
 // 组件挂载时获取用户信息
-onMounted(() => {
+onMounted(async () => {
   console.log('App组件已挂载，开始初始化...')
   
   // 更新页面标题
@@ -81,11 +94,64 @@ onMounted(() => {
       console.log('飞书SDK已加载，开始获取用户信息')
       fetchUserInfo()
     } else {
-      alert("请在飞书应用中打开")
+      // alert("请在飞书应用中打开")
+      fetchUserInfo()
     }
   }
+  const checkApiAndInit = async () => {
+    // 处理授权码回调 - 清除URL参数避免重复处理
+    console.log('检测到授权码，开始处理回调...');
+    
+    // 清除URL中的授权码参数
+    const newUrl = window.location.pathname;
+    window.history.replaceState({}, document.title, newUrl);
+    
+    try {
+      isLoading.value = true;
+      const userData = await feishuAuth.handleAuthorizationCode(code, state);
+      console.log("userData==", userData)
+      console.log("userData.name==", userData.name)
+      console.log("userData.avatar==", userData.avatar)
+      console.log("userData.welcomeText==", userData.welcomeText)
+      
+      userInfo.value = {
+        name: userData.name || '未知用户',
+        avatar: userData.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown',
+        welcomeText: userData.welcomeText || '欢迎使用',
+        rawData: userData.rawData || userData
+      }
+      console.log('userInfo.value = ', userInfo.value)
+      
+      // 清除加载状态和错误状态
+      isLoading.value = false;
+      loadError.value = null;
+    } catch (error) {
+      console.error('处理授权码失败:', error);
+      // 设置错误状态
+      loadError.value = error.message || '处理授权码失败';
+      isLoading.value = false;
+      // 设置默认用户信息
+      userInfo.value = {
+        name: '游客用户',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
+        welcomeText: '授权失败'
+      }
+    }
+  }
+
+  // 检查URL中是否有授权码
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get('code');
+  const state = urlParams.get('state');
+  const error = urlParams.get('error');
   
-  checkSDKAndInit()
+  console.log('URL参数检查:', { code, state, error });
+  
+  if (code) {
+    checkApiAndInit()
+  } else {
+    checkSDKAndInit()
+  }
 })
 </script>
 
@@ -288,6 +354,30 @@ onMounted(() => {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+/* 调试信息样式 */
+.debug-info {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 300px;
+  z-index: 1001;
+}
+
+.debug-info h4 {
+  margin: 0 0 10px 0;
+  color: #ffd700;
+}
+
+.debug-info p {
+  margin: 5px 0;
+  word-break: break-all;
 }
 
 /* 主要内容区域 */

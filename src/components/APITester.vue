@@ -17,7 +17,19 @@ const apiBaseUrl = API_BASE_URL
 const testGetAppId = async () => {
   apiStatus.value.getAppId.status = 'testing'
   try {
-    const response = await fetch(`${apiBaseUrl}/get_appid`)
+    console.log('测试请求URL:', `${apiBaseUrl}/get_appid`);
+    const response = await fetch(`${apiBaseUrl}/get_appid`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
+    console.log('测试响应状态:', response.status, response.statusText);
+    console.log('测试响应头:', response.headers);
+    
     if (response.ok) {
       const data = await response.json()
       apiStatus.value.getAppId = {
@@ -33,6 +45,7 @@ const testGetAppId = async () => {
       }
     }
   } catch (error) {
+    console.error('测试请求失败:', error);
     apiStatus.value.getAppId = {
       status: 'error',
       message: `连接失败: ${error.message}`,
@@ -85,7 +98,18 @@ const testCallback = async () => {
   apiStatus.value.callback.status = 'testing'
   try {
     const testCode = 'test_authorization_code_12345'
-    const response = await fetch(`${apiBaseUrl}/callback?code=${testCode}`)
+    console.log('测试回调URL:', `${apiBaseUrl}/callback?code=${testCode}`);
+    const response = await fetch(`${apiBaseUrl}/callback?code=${testCode}`, {
+      method: 'GET',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
+    });
+    
+    console.log('回调测试响应状态:', response.status, response.statusText);
+    
     if (response.ok) {
       const data = await response.json()
       apiStatus.value.callback = {
@@ -101,6 +125,7 @@ const testCallback = async () => {
       }
     }
   } catch (error) {
+    console.error('回调测试失败:', error);
     apiStatus.value.callback = {
       status: 'error',
       message: `连接失败: ${error.message}`,
