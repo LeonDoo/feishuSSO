@@ -34,20 +34,6 @@ export class FeishuAuth {
     }
   }
 
-  // 获取APP ID
-  async getAppSecret() {
-    try {
-      const response = await fetch(`${this.apiBaseUrl}/get_app_secret`);
-      console.log('responsessss', response)
-      const result = await response.json();
-      console.log('获取appid成功:', result);
-      return result.app_secret;
-    } catch (error) {
-      console.error('获取appid失败:', error);
-      throw error;
-    }
-  }
-
   // 获取用户信息
   async getUserInfo(code) {
     try {
