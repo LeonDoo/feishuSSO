@@ -37,7 +37,7 @@ export class FeishuAuth {
   // 获取用户信息
   async getUserInfo(code) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/callback?code=${code}`);
+      const response = await fetch(`${this.apiBaseUrl}/getUserInfoBySdkCode?code=${code}`);
       const result = await response.json();
       console.log('获取用户信息成功:', result);
       return result;
@@ -364,9 +364,8 @@ export class FeishuAuth {
   async getUserInfoByCode(code) {
     try {
       const redirectUri = window.location.origin + window.location.pathname;
-      console.log('请求用户信息URL:', `${this.apiBaseUrl}/get_user_info?code=${code}&redirectUri=${redirectUri}`);
       
-      const response = await fetch(`${this.apiBaseUrl}/get_user_info?code=${code}&redirectUri=${redirectUri}`, {
+      const response = await fetch(`${this.apiBaseUrl}/getUserInfoByApiCode?code=${code}&redirectUri=${redirectUri}`, {
         method: 'GET',
         mode: 'cors',
         headers: {
