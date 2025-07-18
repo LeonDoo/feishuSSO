@@ -48,7 +48,7 @@ export class FeishuAuth {
   }
 
   // 飞书免登认证流程
-  async apiAuth() {
+  async sdkAuth() {
     return new Promise((resolve, reject) => {
 
       // 获取APP ID
@@ -213,7 +213,7 @@ export class FeishuAuth {
       const openInFeishu = this.checkFeishuEnvironment();
       // 未登录，执行免登流程
       console.log('用户未登录，开始免登流程');
-      const userInfo = openInFeishu ? await this.apiAuth() : this.startAuth();
+      const userInfo = openInFeishu ? await this.sdkAuth() : this.apiAuth();
       
       // 保存用户信息到session
       this.saveUserInfoToSession(userInfo, true); // 持久化保存
@@ -231,7 +231,7 @@ export class FeishuAuth {
     }
   }
 
-  async startAuth() {
+  async apiAuth() {
     const appid = await this.getAppId();
     localStorage.setItem('feishu_appid', appid);
     const redirectUri = window.location.origin + window.location.pathname;
