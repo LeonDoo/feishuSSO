@@ -1,6 +1,6 @@
 <template>
   <div class="recording-management">
-    <!-- 用户登录状态检查 -->
+    <!-- 用户信息加载状态 -->
     <div v-if="userLoading" class="user-loading">
       <div class="loading-spinner"></div>
       <span>正在获取用户信息...</span>
@@ -9,20 +9,15 @@
     <div v-else-if="userError" class="user-error">
       <div class="error-icon">⚠️</div>
       <div class="error-content">
-        <h3>登录状态异常</h3>
+        <h3>用户信息获取失败</h3>
         <p>{{ userError }}</p>
-        <button @click="fetchUserInfo" class="retry-btn">重新登录</button>
+        <button @click="fetchUserInfo" class="retry-btn">重试</button>
       </div>
     </div>
     
     <div v-else>
       <div class="page-header">
         <h1>录音管理</h1>
-        <div class="header-actions">
-          <button @click="refreshData" class="refresh-btn" :disabled="loading">
-            {{ loading ? '加载中...' : '刷新' }}
-          </button>
-        </div>
       </div>
 
       <!-- 搜索条件 -->
@@ -284,12 +279,7 @@ const fetchRecordings = async () => {
   }
 }
 
-// 刷新数据
-const refreshData = () => {
-  currentPage.value = 1
-  recordingsError.value = null // 清除错误状态
-  fetchRecordings()
-}
+
 
 // 处理日期变化
 const handleDateChange = () => {
@@ -303,6 +293,8 @@ const searchRecordings = () => {
   recordingsError.value = null // 清除错误状态
   fetchRecordings()
 }
+
+
 
 // 切换页面
 const changePage = (page) => {
@@ -451,30 +443,16 @@ const fetchUserInfo = async () => {
     const userData = await feishuAuth.checkLoginAndGetUser()
     userInfo.value = userData
     
-    // 检查是否有有效的用户信息
+    // 路由守卫已确保用户已登录，这里只需要处理获取失败的情况
     if (!userData || !userData.rawData) {
-      userError.value = '请先登录后再使用录音管理功能'
+      userError.value = '用户信息获取失败，请重新登录'
       return false
     }
     
     return true
   } catch (error) {
     console.error('获取用户信息失败:', error)
-    
-    // 根据错误类型设置不同的错误信息
-    let errorMessage = '获取用户信息失败'
-    
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      errorMessage = '后端服务器未启动，请检查服务状态'
-    } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-      errorMessage = '网络连接失败，请检查网络连接'
-    } else if (error.message.includes('获取到的用户信息无效')) {
-      errorMessage = '用户信息获取失败，请重新登录'
-    } else {
-      errorMessage = error.message || '获取用户信息失败'
-    }
-    
-    userError.value = errorMessage
+    userError.value = '用户信息获取失败，请重新登录'
     return false
   } finally {
     userLoading.value = false
@@ -522,11 +500,8 @@ const formatDuration = (durationMs) => {
 
 // 组件挂载时获取数据
 onMounted(async () => {
-  // 先获取用户信息
-  const userValid = await fetchUserInfo()
-  if (!userValid) {
-    return // 用户未登录，不继续执行
-  }
+  // 获取用户信息（路由守卫已确保用户已登录）
+  await fetchUserInfo()
   
   // 设置默认日期为今天
   const today = new Date()
@@ -556,26 +531,7 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.refresh-btn {
-  padding: 8px 16px;
-  background: #3b82f6;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
 
-.refresh-btn:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.refresh-btn:disabled {
-  background: #9ca3af;
-  cursor: not-allowed;
-}
 
 /* 搜索区域样式 */
 .search-section {
@@ -636,6 +592,8 @@ onMounted(async () => {
   background: #9ca3af;
   cursor: not-allowed;
 }
+
+
 
 /* 用户登录状态样式 */
 .user-loading, .user-error {

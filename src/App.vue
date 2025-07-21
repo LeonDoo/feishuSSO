@@ -1,14 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import Home from './components/Home.vue'
-import ResponsiveTest from './components/ResponsiveTest.vue'
-import APITester from './components/APITester.vue'
-import RecordingManagement from './components/RecordingManagement.vue'
+import { useRouter, useRoute } from 'vue-router'
 import { feishuAuth } from './utils/feishuAuth.js'
 import { APP_TITLE, ENV_NAME } from './config/index.js'
 
-// 当前页面状态
-const currentPage = ref('home')
+// 获取路由实例
+const router = useRouter()
+const route = useRoute()
 
 // 用户信息状态
 const userInfo = ref({
@@ -25,6 +23,12 @@ const fetchUserInfo = async () => {
   try {
     isLoading.value = true
     loadError.value = null
+    
+    // 如果当前不在首页，清除重定向路径，避免登录时的重定向URI问题
+    if (route.name !== 'Home') {
+      console.log('当前不在首页，清除重定向路径')
+      sessionStorage.removeItem('redirectAfterLogin')
+    }
     
     console.log('开始获取用户信息...')
     const userData = await feishuAuth.checkLoginAndGetUser()
@@ -68,6 +72,10 @@ const logout = () => {
     rawData: null
   }
   loadError.value = null
+  // 清除重定向路径
+  sessionStorage.removeItem('redirectAfterLogin')
+  // 跳转到首页，确保下次登录时的重定向URI是有效的
+  router.push({ name: 'Home' })
   console.log('用户已登出')
 }
 
@@ -82,12 +90,16 @@ const clearSession = () => {
   }
   loadError.value = null
   isLoading.value = false
+  // 清除重定向路径
+  sessionStorage.removeItem('redirectAfterLogin')
+  // 跳转到首页，确保下次登录时的重定向URI是有效的
+  router.push({ name: 'Home' })
   console.log('Session已清除')
 }
 
 // 页面切换功能
 const switchPage = (page) => {
-  currentPage.value = page
+  router.push({ name: page })
   console.log('切换到页面:', page)
 }
 
@@ -99,13 +111,21 @@ onMounted(async () => {
   document.title = APP_TITLE
   
   // 等待飞书SDK加载完成
-  const checkSDKAndInit = () => {
+  const checkSDKAndInit = async () => {
     if (window.h5sdk && window.tt) {
       console.log('飞书SDK已加载，开始获取用户信息')
-      fetchUserInfo()
+      await fetchUserInfo()
     } else {
       // alert("请在飞书应用中打开")
-      fetchUserInfo()
+      await fetchUserInfo()
+    }
+    
+    // 检查是否有保存的重定向路径（SDK免登成功后）
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin')
+    if (redirectPath) {
+      console.log('SDK免登后检测到重定向路径:', redirectPath)
+      sessionStorage.removeItem('redirectAfterLogin') // 清除保存的路径
+      router.push(redirectPath) // 跳转到用户原来想访问的页面
     }
   }
   const checkApiAndInit = async () => {
@@ -135,6 +155,14 @@ onMounted(async () => {
       // 清除加载状态和错误状态
       isLoading.value = false;
       loadError.value = null;
+      
+      // 检查是否有保存的重定向路径
+      const redirectPath = sessionStorage.getItem('redirectAfterLogin')
+      if (redirectPath) {
+        console.log('检测到重定向路径:', redirectPath)
+        sessionStorage.removeItem('redirectAfterLogin') // 清除保存的路径
+        router.push(redirectPath) // 跳转到用户原来想访问的页面
+      }
     } catch (error) {
       console.error('处理授权码失败:', error);
       // 设置错误状态
@@ -173,20 +201,20 @@ onMounted(async () => {
         
         <!-- 中间导航菜单 -->
         <nav class="nav-menu">
-          <button 
-            @click="switchPage('home')" 
+          <router-link 
+            to="/" 
             class="nav-item" 
-            :class="{ 'active': currentPage === 'home' }"
+            :class="{ 'active': route.name === 'Home' }"
           >
             首页
-          </button>
-          <button 
-            @click="switchPage('recording')" 
+          </router-link>
+          <router-link 
+            to="/recording" 
             class="nav-item" 
-            :class="{ 'active': currentPage === 'recording' }"
+            :class="{ 'active': route.name === 'RecordingManagement' }"
           >
             录音管理
-          </button>
+          </router-link>
         </nav>
         
         <!-- 右侧用户信息 -->
@@ -199,7 +227,6 @@ onMounted(async () => {
             </div>
             <!-- 错误状态 -->
             <div v-else-if="loadError" class="error-indicator" @click="fetchUserInfo">
-              <div class="error-icon">⚠️</div>
               <span class="user-name">点击重试</span>
             </div>
             <!-- 正常状态 -->
@@ -213,7 +240,6 @@ onMounted(async () => {
             </div>
             <!-- 无用户信息状态 -->
             <div v-else class="error-indicator" @click="fetchUserInfo">
-              <div class="error-icon">⚠️</div>
               <span class="user-name">点击登录</span>
             </div>
           </div>
@@ -223,15 +249,29 @@ onMounted(async () => {
 
     <!-- 主要内容区域 -->
     <main class="main-content">
-      <Home v-if="currentPage === 'home'" />
-      <RecordingManagement v-else-if="currentPage === 'recording'" />
+      <!-- 加载状态 -->
+      <div v-if="isLoading" class="loading-overlay">
+        <div class="loading-content">
+          <div class="loading-spinner"></div>
+          <p>正在加载...</p>
+        </div>
+      </div>
+      
+      <!-- 错误状态 -->
+      <div v-else-if="loadError" class="error-overlay">
+        <div class="error-content">
+          <h3>加载失败</h3>
+          <p>{{ loadError }}</p>
+          <button @click="fetchUserInfo" class="retry-btn">重试</button>
+        </div>
+      </div>
+      
+      <!-- 正常内容 -->
+      <div v-else>
+        <!-- 路由视图 -->
+        <router-view :user-info="userInfo" />
+      </div>
     </main>
-    
-    <!-- 响应式测试信息 (开发环境下显示) -->
-    <ResponsiveTest />
-    
-    <!-- API接口测试工具 -->
-    <APITester />
   </div>
 </template>
 
@@ -252,6 +292,7 @@ onMounted(async () => {
   right: 0;
   z-index: 1000;
   height: 60px;
+  overflow: hidden; /* 防止子元素溢出 */
 }
 
 .header-content {
@@ -281,6 +322,7 @@ onMounted(async () => {
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
+  display: inline-block;
 }
 
 .nav-item:hover {
@@ -325,11 +367,11 @@ onMounted(async () => {
   padding: 8px 12px;
   border-radius: 25px;
   background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   cursor: pointer;
   transition: all 0.3s ease;
   min-width: 120px;
+  /* 移除 backdrop-filter 避免溢出 */
 }
 
 .user-info:hover {
@@ -351,12 +393,28 @@ onMounted(async () => {
 }
 
 /* 用户内容区域 */
-.user-content,
-.loading-indicator,
-.error-indicator {
+.user-content {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.error-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-indicator:hover {
+  opacity: 0.8;
 }
 
 .user-avatar {
@@ -445,6 +503,68 @@ onMounted(async () => {
   margin-top: 60px; /* 为固定header留出空间 */
   padding: 20px;
   background: #f8fafc;
+}
+
+/* 加载和错误状态样式 */
+.loading-overlay, .error-overlay {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  background: #f8fafc;
+}
+
+.loading-content, .error-content {
+  text-align: center;
+  padding: 40px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.error-content h3 {
+  margin: 0 0 8px 0;
+  color: #dc2626;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.error-content p {
+  margin: 0 0 20px 0;
+  color: #6b7280;
+}
+
+.retry-btn {
+  padding: 10px 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #2563eb;
 }
 
 /* 响应式设计 */
