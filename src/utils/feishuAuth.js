@@ -203,7 +203,7 @@ export class FeishuAuth {
   // 检查登录状态并获取用户信息
   async checkLoginAndGetUser() {
     try {
-      // 首先从session中检查是否已经登录 todo 
+      // 首先从session中检查是否已经登录
       const sessionUserInfo = this.getSessionUserInfo();
       if (sessionUserInfo) {
         console.log('用户已登录（从session获取）');
@@ -215,19 +215,20 @@ export class FeishuAuth {
       console.log('用户未登录，开始免登流程');
       const userInfo = openInFeishu ? await this.sdkAuth() : this.apiAuth();
       
+      // 检查获取到的用户信息是否有效
+      if (!userInfo || !userInfo.name) {
+        throw new Error('获取到的用户信息无效');
+      }
+      
       // 保存用户信息到session
       this.saveUserInfoToSession(userInfo, true); // 持久化保存
       
       return this.formatUserInfo(userInfo);
     } catch (error) {
       console.error('获取用户信息失败:', error);
-      // 返回默认用户信息
-      return {
-        name: '游客用户',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
-        welcomeText: '请启动后端服务',
-        rawData: null
-      };
+      // 不保存任何信息到storage，也不返回默认用户信息
+      // 让调用方处理错误状态
+      throw error;
     }
   }
 

@@ -3,8 +3,12 @@ import { ref, onMounted } from 'vue'
 import Home from './components/Home.vue'
 import ResponsiveTest from './components/ResponsiveTest.vue'
 import APITester from './components/APITester.vue'
+import RecordingManagement from './components/RecordingManagement.vue'
 import { feishuAuth } from './utils/feishuAuth.js'
 import { APP_TITLE, ENV_NAME } from './config/index.js'
+
+// 当前页面状态
+const currentPage = ref('home')
 
 // 用户信息状态
 const userInfo = ref({
@@ -41,16 +45,14 @@ const fetchUserInfo = async () => {
       loadError.value = `后端服务器未启动 (${feishuAuth.apiBaseUrl})`
     } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
       loadError.value = '网络连接失败，请检查后端服务'
+    } else if (error.message.includes('获取到的用户信息无效')) {
+      loadError.value = '用户信息获取失败，请重新登录'
     } else {
       loadError.value = error.message || '获取用户信息失败'
     }
     
-    // 设置默认用户信息
-    userInfo.value = {
-      name: '游客用户',
-      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
-      welcomeText: '请启动后端服务'
-    }
+    // 不设置默认用户信息，保持用户信息为空
+    // 这样用户可以通过重新获取来尝试登录
   } finally {
     isLoading.value = false
   }
@@ -60,9 +62,10 @@ const fetchUserInfo = async () => {
 const logout = () => {
   feishuAuth.clearUserInfo()
   userInfo.value = {
-    name: '游客用户',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
-    welcomeText: '已登出'
+    name: '',
+    avatar: '',
+    welcomeText: '',
+    rawData: null
   }
   loadError.value = null
   console.log('用户已登出')
@@ -72,13 +75,20 @@ const logout = () => {
 const clearSession = () => {
   feishuAuth.clearUserInfo()
   userInfo.value = {
-    name: '游客用户',
-    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
-    welcomeText: 'Session已清除'
+    name: '',
+    avatar: '',
+    welcomeText: '',
+    rawData: null
   }
   loadError.value = null
   isLoading.value = false
   console.log('Session已清除')
+}
+
+// 页面切换功能
+const switchPage = (page) => {
+  currentPage.value = page
+  console.log('切换到页面:', page)
 }
 
 // 组件挂载时获取用户信息
@@ -115,9 +125,9 @@ onMounted(async () => {
       console.log("userData.welcomeText==", userData.welcomeText)
       
       userInfo.value = {
-        name: userData.name || '未知用户',
-        avatar: userData.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=Unknown',
-        welcomeText: userData.welcomeText || '欢迎使用',
+        name: userData.name,
+        avatar: userData.avatar,
+        welcomeText: userData.welcomeText,
         rawData: userData.rawData || userData
       }
       console.log('userInfo.value = ', userInfo.value)
@@ -130,12 +140,7 @@ onMounted(async () => {
       // 设置错误状态
       loadError.value = error.message || '处理授权码失败';
       isLoading.value = false;
-      // 设置默认用户信息
-      userInfo.value = {
-        name: '游客用户',
-        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Guest',
-        welcomeText: '授权失败'
-      }
+      // 不设置默认用户信息，保持用户信息为空
     }
   }
 
@@ -166,6 +171,24 @@ onMounted(async () => {
           <span class="app-title">{{ APP_TITLE }}</span>
         </div>
         
+        <!-- 中间导航菜单 -->
+        <nav class="nav-menu">
+          <button 
+            @click="switchPage('home')" 
+            class="nav-item" 
+            :class="{ 'active': currentPage === 'home' }"
+          >
+            首页
+          </button>
+          <button 
+            @click="switchPage('recording')" 
+            class="nav-item" 
+            :class="{ 'active': currentPage === 'recording' }"
+          >
+            录音管理
+          </button>
+        </nav>
+        
         <!-- 右侧用户信息 -->
         <div class="user-section">
           <div class="user-info" :class="{ 'loading': isLoading, 'error': loadError }">
@@ -180,13 +203,18 @@ onMounted(async () => {
               <span class="user-name">点击重试</span>
             </div>
             <!-- 正常状态 -->
-            <div v-else class="user-content">
+            <div v-else-if="userInfo.name" class="user-content">
               <img :src="userInfo.avatar" :alt="userInfo.name" class="user-avatar" />
               <span class="user-name">{{ userInfo.name }}</span>
-              <!-- 登出按钮（仅在有用户信息时显示） -->
-              <button v-if="userInfo.name !== '游客用户'" @click="logout" class="logout-btn" title="登出">
+              <!-- 登出按钮 -->
+              <button @click="logout" class="logout-btn" title="登出">
                 🚪
               </button>
+            </div>
+            <!-- 无用户信息状态 -->
+            <div v-else class="error-indicator" @click="fetchUserInfo">
+              <div class="error-icon">⚠️</div>
+              <span class="user-name">点击登录</span>
             </div>
           </div>
         </div>
@@ -195,7 +223,8 @@ onMounted(async () => {
 
     <!-- 主要内容区域 -->
     <main class="main-content">
-      <Home />
+      <Home v-if="currentPage === 'home'" />
+      <RecordingManagement v-else-if="currentPage === 'recording'" />
     </main>
     
     <!-- 响应式测试信息 (开发环境下显示) -->
@@ -233,6 +262,36 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
+}
+
+/* 中间导航菜单 */
+.nav-menu {
+  display: flex;
+  gap: 20px;
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 600;
 }
 
 /* 左侧Logo区域 */
@@ -448,6 +507,11 @@ onMounted(async () => {
     font-size: 14px;
   }
   
+  .nav-item {
+    font-size: 14px;
+    padding: 6px 12px;
+  }
+  
   .user-info {
     padding: 6px 8px;
   }
@@ -469,6 +533,11 @@ onMounted(async () => {
   
   .app-title {
     display: none;
+  }
+  
+  .nav-item {
+    font-size: 13px;
+    padding: 5px 10px;
   }
   
   .user-name {
@@ -497,6 +566,11 @@ onMounted(async () => {
   
   .app-title {
     display: none;
+  }
+  
+  .nav-item {
+    font-size: 12px;
+    padding: 4px 8px;
   }
   
   .user-info {
