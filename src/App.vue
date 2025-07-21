@@ -233,10 +233,10 @@ onMounted(async () => {
             <div v-else-if="userInfo.name" class="user-content">
               <img :src="userInfo.avatar" :alt="userInfo.name" class="user-avatar" />
               <span class="user-name">{{ userInfo.name }}</span>
-              <!-- 登出按钮 -->
-              <button @click="logout" class="logout-btn" title="登出">
-                🚪
-              </button>
+                             <!-- 登出按钮 -->
+               <button @click="logout" class="logout-btn" title="登出">
+                 <svg t="1753103336216" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="1934" width="30" height="30"><path d="M863.4 493.3L744.2 344.2c-5.8-7.2-14.4-11.2-23.3-11.2-3.3 0-6.6 0.5-9.9 1.7-11.9 4.2-19.9 15.5-19.9 28.1v89.5H452.5c-32.9 0-59.6 26.7-59.6 59.6 0 32.9 26.7 59.6 59.6 59.6H691V661c0 12.7 8 23.9 19.9 28.1 3.2 1.1 6.6 1.7 9.9 1.7 8.9 0 17.5-4 23.3-11.2l119.3-149.1c8.8-10.8 8.8-26.3 0-37.2zM571.8 750.5H332.7c-32.7 0-59.2-26.7-59.2-59.6V333v-0.5c0-32.7 26.7-59.2 59.7-59.2h238.5c32.9 0 59.6-26.7 59.6-59.6 0-32.9-26.7-59.6-59.6-59.6H273.6c-65.9 0-119.3 53.4-119.3 119.3v477.1c0 65.9 53.4 119.3 119.3 119.3h298.2c32.9 0 59.6-26.7 59.6-59.6 0-33-26.7-59.7-59.6-59.7z m0 0" fill="currentColor" p-id="1935"></path></svg>
+               </button>
             </div>
             <!-- 无用户信息状态 -->
             <div v-else class="error-indicator" @click="fetchUserInfo">
@@ -433,18 +433,37 @@ onMounted(async () => {
 .logout-btn {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 16px;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 4px;
-  transition: all 0.2s;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
   margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .logout-btn:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(1.05);
   color: white;
-  background: rgba(255, 255, 255, 0.1);
+}
+
+.logout-btn:active {
+  transform: scale(0.95);
+}
+
+.logout-btn .icon {
+  width: 18px;
+  height: 18px;
+  transition: all 0.2s ease;
+}
+
+.logout-btn:hover .icon {
+  filter: brightness(1.2);
 }
 
 /* 加载状态样式 */
@@ -568,6 +587,69 @@ onMounted(async () => {
 }
 
 /* 响应式设计 */
+@media (max-width: 768px) {
+  .user-info {
+    padding: 6px 10px;
+    min-width: 100px;
+  }
+  
+  .user-avatar {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .user-name {
+    font-size: 13px;
+  }
+  
+  .logout-btn {
+    padding: 5px;
+    margin-left: 8px;
+    border-radius: 5px;
+  }
+  
+  .logout-btn .icon {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .logout-btn:hover {
+    transform: scale(1.02);
+  }
+}
+
+/* 小屏幕手机优化 */
+@media (max-width: 480px) {
+  .user-info {
+    padding: 5px 8px;
+    min-width: 90px;
+  }
+  
+  .user-avatar {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .user-name {
+    font-size: 12px;
+    max-width: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  
+  .logout-btn {
+    padding: 4px;
+    margin-left: 6px;
+    border-radius: 4px;
+  }
+  
+  .logout-btn .icon {
+    width: 14px;
+    height: 14px;
+  }
+}
+
 /* 超大屏幕 (1400px 及以上) */
 @media (min-width: 1400px) {
   .header-content {
