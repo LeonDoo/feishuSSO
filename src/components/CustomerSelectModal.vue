@@ -59,6 +59,7 @@
 <script setup>
 import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { API_BASE_URL } from '../config/index.js'
+import { getAuthHeaders } from '../utils/auth.js'
 
 const props = defineProps({
   visible: {
@@ -76,10 +77,6 @@ const props = defineProps({
   endTime: {
     type: String,
     default: ''
-  },
-  userId: {
-    type: [String, Number],
-    default: null
   }
 })
 
@@ -166,17 +163,9 @@ const getTimeRange = () => {
 
 // 调用客户API
 const callCustomerAPI = async (contactAlias = null) => {
-  // 检查userId
-  if (!props.userId) {
-    console.error('用户ID无效')
-    customers.value = []
-    return
-  }
-  
   const { startTime, endTime } = getTimeRange()
   
   const requestBody = {
-    userId: props.userId,
     startTime: startTime,
     endTime: endTime
   }
@@ -188,9 +177,7 @@ const callCustomerAPI = async (contactAlias = null) => {
   
       const response = await fetch(`${API_BASE_URL}/ab/contactList`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
     body: JSON.stringify(requestBody)
   })
   

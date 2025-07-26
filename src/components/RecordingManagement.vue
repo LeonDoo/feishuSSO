@@ -142,7 +142,6 @@
         :default-search="currentRecording?.contactAlias || currentRecording?.customer?.name || ''"
         :start-time="getCurrentStartTime()"
         :end-time="getCurrentEndTime()"
-        :user-id="getUserId()"
         @close="closeCustomerModal"
         @confirm="handleCustomerSelect"
       />
@@ -155,6 +154,7 @@ import { ref, onMounted, computed } from 'vue'
 import CustomerSelectModal from './CustomerSelectModal.vue'
 import { feishuAuth } from '../utils/feishuAuth.js'
 import { API_BASE_URL } from '../config/index.js'
+import { getAuthHeaders } from '../utils/auth.js'
 
 // 响应式数据
 const recordings = ref([])
@@ -181,13 +181,6 @@ const currentRecording = ref(null)
 
 // 获取录音列表
 const fetchRecordings = async () => {
-  // 检查用户登录状态
-  const userId = getUserId()
-  if (!userId) {
-    console.error('用户未登录或用户ID无效')
-    return
-  }
-  
   loading.value = true
   recordingsError.value = null // 清除之前的错误
   
@@ -206,11 +199,8 @@ const fetchRecordings = async () => {
     
     const response = await fetch(`${API_BASE_URL}/ab/page`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({
-        userId: userId,
         pageNumber: currentPage.value,
         pageSize: pageSize.value,
         startTime: startTime,
@@ -325,9 +315,7 @@ const handleCustomerSelect = async (customer) => {
         // 有选中客户，调用绑定联系人接口
         const response = await fetch(`${API_BASE_URL}/ab/bindContact`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             id: currentRecording.value.id,
             contactWxId: customer.wxId
@@ -351,9 +339,7 @@ const handleCustomerSelect = async (customer) => {
         // 没有选中客户，调用绑定接口但不传contactWxId参数来清除绑定
         const response = await fetch(`${API_BASE_URL}/ab/bindContact`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: getAuthHeaders(),
           body: JSON.stringify({
             id: currentRecording.value.id
             // 不传contactWxId参数，后端会清除绑定
@@ -459,16 +445,7 @@ const fetchUserInfo = async () => {
   }
 }
 
-// 获取用户ID
-const getUserId = () => {
-  if (!userInfo.value || !userInfo.value.rawData) {
-    return null
-  }
-  
-  // 尝试从不同字段获取用户ID
-  const rawData = userInfo.value.rawData
-  return rawData.user_id || rawData.id || rawData.userId || null
-}
+
 
 
 

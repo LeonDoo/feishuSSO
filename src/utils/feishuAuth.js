@@ -23,10 +23,20 @@ export class FeishuAuth {
   // 获取APP ID
   async getAppId() {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/get_appid`);
+      const response = await fetch(`${this.apiBaseUrl}/auth/get_appid`);
       console.log('responsessss', response)
       const result = await response.json();
       console.log('获取appid成功:', result);
+      
+      // 检查新的响应格式
+      if (result.code !== undefined) {
+        if (result.code !== 200) {
+          throw new Error(result.message || '获取appid失败');
+        }
+        return result.data.appid;
+      }
+      
+      // 兼容旧格式
       return result.appid;
     } catch (error) {
       console.error('获取appid失败:', error);
@@ -37,12 +47,22 @@ export class FeishuAuth {
   // 获取用户信息
   async getUserInfo(code) {
     try {
-      const response = await fetch(`${this.apiBaseUrl}/getUserInfoBySdkCode?code=${code}`);
+      const response = await fetch(`${this.apiBaseUrl}/auth/getUserInfoBySdkCode?code=${code}`);
       const result = await response.json();
       console.log('获取用户信息成功:', result);
+      
+      // 检查新的响应格式
+      if (result.code !== undefined) {
+        if (result.code !== 200) {
+          throw new Error(result.message || '获取用户信息失败');
+        }
+        return result.data;
+      }
+      
+      // 兼容旧格式
       return result;
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('getUserInfo 获取用户信息失败:', error);
       throw error;
     }
   }
@@ -145,6 +165,8 @@ export class FeishuAuth {
       name: name,
       avatar: avatar,
       welcomeText: isZhCN ? "欢迎使用飞书" : "Welcome to Feishu",
+      // 保存 token 信息，支持多种可能的字段名
+      token: userInfo.token || userInfo.access_token || userInfo.accessToken || null,
       rawData: userInfo
     };
     
@@ -225,7 +247,7 @@ export class FeishuAuth {
       
       return this.formatUserInfo(userInfo);
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('checkLoginAndGetUser 获取用户信息失败:', error);
       // 不保存任何信息到storage，也不返回默认用户信息
       // 让调用方处理错误状态
       throw error;
@@ -366,7 +388,7 @@ export class FeishuAuth {
     try {
       const redirectUri = window.location.origin + window.location.pathname;
       
-      const response = await fetch(`${this.apiBaseUrl}/getUserInfoByApiCode?code=${code}&redirectUri=${redirectUri}`, {
+      const response = await fetch(`${this.apiBaseUrl}/auth/getUserInfoByApiCode?code=${code}&redirectUri=${redirectUri}`, {
         method: 'GET',
         mode: 'cors',
         headers: {
@@ -384,7 +406,16 @@ export class FeishuAuth {
       const result = await response.json();
       console.log('获取用户信息成功，完整响应:', result);
       
-      // 检查响应格式
+      // 检查新的响应格式
+      if (result.code !== undefined) {
+        if (result.code !== 200) {
+          throw new Error(result.message || '获取用户信息失败');
+        }
+        console.log('返回result.data:', result.data);
+        return result.data;
+      }
+      
+      // 兼容旧格式
       if (result.data) {
         console.log('返回result.data:', result.data);
         return result.data;
@@ -396,7 +427,7 @@ export class FeishuAuth {
         return result;
       }
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('getUserInfoByCode 获取用户信息失败:', error);
       throw error;
     }
   }
