@@ -143,6 +143,16 @@
         @close="closeCustomerModal"
         @confirm="handleCustomerSelect"
       />
+
+      <!-- 音频播放器 -->
+      <AudioPlayer
+        :visible="audioPlayerVisible"
+        :audio-url="currentAudioUrl"
+        :title="currentAudioTitle"
+        :start-time="currentRecording?.startTime || ''"
+        :end-time="currentRecording?.endTime || ''"
+        @close="closeAudioPlayer"
+      />
     </div>
   </div>
 </template>
@@ -150,6 +160,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import CustomerSelectModal from './CustomerSelectModal.vue'
+import AudioPlayer from './AudioPlayer.vue'
 import { feishuAuth } from '../utils/feishuAuth.js'
 import { API_BASE_URL } from '../config/index.js'
 import { getAuthHeaders } from '../utils/auth.js'
@@ -176,6 +187,11 @@ const recordingsError = ref(null)
 // 客户选择弹窗
 const customerModalVisible = ref(false)
 const currentRecording = ref(null)
+
+// 音频播放器
+const audioPlayerVisible = ref(false)
+const currentAudioUrl = ref('')
+const currentAudioTitle = ref('')
 
 // 获取录音列表
 const fetchRecordings = async () => {
@@ -374,9 +390,31 @@ const handleCustomerSelect = async (customer) => {
   }
 }
 
-// 播放录音（简化版）
+// 播放录音
 const playRecording = (recording) => {
-  alert('暂不支持在线播放，如有需要可下载音频文件。')
+  if (!recording.url) {
+    alert('录音文件不可用')
+    return
+  }
+  
+  currentRecording.value = recording
+  currentAudioUrl.value = recording.url
+  currentAudioTitle.value = recording.customer ? `${recording.customer.name}` : '未选择客户'
+  audioPlayerVisible.value = true
+  
+  // 调试信息
+  console.log('播放录音数据:', {
+    startTime: recording.startTime,
+    endTime: recording.endTime,
+    url: recording.url
+  })
+}
+
+// 关闭音频播放器
+const closeAudioPlayer = () => {
+  audioPlayerVisible.value = false
+  currentAudioUrl.value = ''
+  currentAudioTitle.value = ''
 }
 
 // 下载录音
