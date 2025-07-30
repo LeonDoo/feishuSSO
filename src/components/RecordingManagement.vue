@@ -45,7 +45,6 @@
             <thead>
               <tr>
                 <th>客户</th>
-                <th>文件名</th>
                 <th>开始时间</th>
                 <th>结束时间</th>
                 <th>时长</th>
@@ -54,13 +53,13 @@
             </thead>
                       <tbody>
             <tr v-if="loading" class="loading-row">
-              <td colspan="6" class="loading-cell">
+              <td colspan="5" class="loading-cell">
                 <div class="loading-spinner"></div>
                 <span>加载中...</span>
               </td>
             </tr>
             <tr v-else-if="recordingsError" class="error-row">
-              <td colspan="6" class="error-cell">
+              <td colspan="5" class="error-cell">
                 <div class="error-content">
                   <div class="error-icon">❌</div>
                   <div class="error-text">
@@ -71,7 +70,7 @@
               </td>
             </tr>
             <tr v-else-if="recordings.length === 0" class="empty-row">
-              <td colspan="6" class="empty-cell">
+              <td colspan="5" class="empty-cell">
                 暂无录音数据
               </td>
             </tr>
@@ -85,7 +84,6 @@
                     {{ recording.customer ? recording.customer.name : '选择客户' }}
                   </button>
                 </td>
-                <td class="filename-cell">{{ recording.filename }}</td>
                 <td class="time-cell">{{ formatDateTime(recording.startTime) }}</td>
                 <td class="time-cell">{{ formatDateTime(recording.endTime) }}</td>
                 <td class="duration-cell">{{ formatDuration(recording.duration) }}</td>
@@ -761,15 +759,7 @@ onMounted(async () => {
   font-weight: 500;
 }
 
-.filename-cell {
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #111827;
-  max-width: 300px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+
 
 .time-cell {
   font-family: 'Courier New', monospace;
@@ -890,9 +880,7 @@ onMounted(async () => {
     font-size: 12px;
   }
   
-  .filename-cell {
-    max-width: 120px;
-  }
+
   
   .customer-btn {
     padding: 4px 8px;
@@ -927,9 +915,7 @@ onMounted(async () => {
     font-size: 11px;
   }
   
-  .filename-cell {
-    max-width: 80px;
-  }
+
   
   .time-cell, .duration-cell {
     font-size: 10px;
