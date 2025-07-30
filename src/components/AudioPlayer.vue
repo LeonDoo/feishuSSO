@@ -23,8 +23,9 @@
         
         <div class="audio-info">
           <div class="controls-row">
-            <button @click="togglePlay" class="play-btn" :class="{ playing: isPlaying }">
-              <svg v-if="!isPlaying" class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+            <button @click="togglePlay" class="play-btn" :class="{ playing: isPlaying }" :disabled="isLoading">
+              <div v-if="isLoading" class="loading-spinner"></div>
+              <svg v-else-if="!isPlaying" class="play-icon" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
               </svg>
               <svg v-else class="pause-icon" viewBox="0 0 24 24" fill="currentColor">
@@ -35,7 +36,7 @@
             <div class="progress-container">
               <input 
                 type="range" 
-                :value="progress" 
+                v-model="progress" 
                 @input="seekTo"
                 class="progress-bar"
                 min="0"
@@ -89,6 +90,7 @@ const isPlaying = ref(false)
 const currentTime = ref(0)
 const duration = ref(0)
 const progress = ref(0)
+const isLoading = ref(false)
 
 // 初始化音频元素
 onMounted(() => {
@@ -96,7 +98,9 @@ onMounted(() => {
   audio.value.volume = 0.5 // 固定音量
   
   // 监听音频事件
+  audio.value.addEventListener('loadstart', handleLoadStart)
   audio.value.addEventListener('loadedmetadata', handleLoadedMetadata)
+  audio.value.addEventListener('canplay', handleCanPlay)
   audio.value.addEventListener('timeupdate', handleTimeUpdate)
   audio.value.addEventListener('ended', handleEnded)
   audio.value.addEventListener('error', handleError)
@@ -105,7 +109,9 @@ onMounted(() => {
 onUnmounted(() => {
   if (audio.value) {
     audio.value.pause()
+    audio.value.removeEventListener('loadstart', handleLoadStart)
     audio.value.removeEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.value.removeEventListener('canplay', handleCanPlay)
     audio.value.removeEventListener('timeupdate', handleTimeUpdate)
     audio.value.removeEventListener('ended', handleEnded)
     audio.value.removeEventListener('error', handleError)
@@ -118,7 +124,9 @@ watch(() => props.audioUrl, (newUrl) => {
     // 重置播放状态
     isPlaying.value = false
     currentTime.value = 0
+    duration.value = 0
     progress.value = 0
+    isLoading.value = true
     
     audio.value.src = newUrl
     audio.value.load()
@@ -146,16 +154,24 @@ watch(() => props.visible, (visible) => {
   }
 })
 
+const handleLoadStart = () => {
+  isLoading.value = true
+}
+
 const handleLoadedMetadata = () => {
   duration.value = audio.value.duration
-  // 确保加载新音频时重置进度
-  currentTime.value = 0
-  progress.value = 0
+}
+
+const handleCanPlay = () => {
+  isLoading.value = false
 }
 
 const handleTimeUpdate = () => {
-  currentTime.value = audio.value.currentTime
-  progress.value = (currentTime.value / duration.value) * 100
+  // 防止在拖拽过程中被覆盖
+  if (Math.abs(audio.value.currentTime - currentTime.value) > 0.1) {
+    currentTime.value = audio.value.currentTime
+    progress.value = (currentTime.value / duration.value) * 100
+  }
 }
 
 const handleEnded = () => {
@@ -166,11 +182,12 @@ const handleEnded = () => {
 
 const handleError = (error) => {
   console.error('音频播放错误:', error)
+  isLoading.value = false
   alert('音频播放失败，请检查音频文件是否可用')
 }
 
 const togglePlay = () => {
-  if (!audio.value || !props.audioUrl) return
+  if (!audio.value || !props.audioUrl || isLoading.value) return
   
   if (isPlaying.value) {
     audio.value.pause()
@@ -184,12 +201,19 @@ const togglePlay = () => {
   }
 }
 
-const seekTo = (event) => {
+const seekTo = () => {
   if (!audio.value || !duration.value) return
   
-  const newProgress = parseFloat(event.target.value)
-  const newTime = (newProgress / 100) * duration.value
+  const newTime = (progress.value / 100) * duration.value
+  console.log('Seeking to:', {
+    progress: progress.value,
+    duration: duration.value,
+    newTime: newTime,
+    currentAudioTime: audio.value.currentTime
+  })
+  
   audio.value.currentTime = newTime
+  currentTime.value = newTime
 }
 
 
@@ -421,9 +445,34 @@ const formatDateTime = (dateTimeStr) => {
   background: #dc2626;
 }
 
+.play-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.play-btn:disabled:hover {
+  background: #9ca3af;
+  transform: none;
+}
+
 .play-icon, .pause-icon {
   width: 20px;
   height: 20px;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 
