@@ -243,7 +243,7 @@ export class FeishuAuth {
       }
       
       // 保存用户信息到session
-      this.saveUserInfoToSession(userInfo, true); // 持久化保存
+      this.saveUserInfoToSession(userInfo, false); // 持久化保存
       
       return this.formatUserInfo(userInfo);
     } catch (error) {
@@ -309,7 +309,7 @@ export class FeishuAuth {
       }
       
       // 保存到session
-      this.saveUserInfoToSession(userInfo, true);
+      this.saveUserInfoToSession(userInfo, false);
       console.log('用户信息已保存到session');
       
       return formattedUserInfo;

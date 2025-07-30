@@ -195,7 +195,7 @@ onMounted(async () => {
       <div class="header-content">
         <!-- 左侧Logo -->
         <div class="logo-section">
-          <img alt="Logo" class="logo" src="./assets/logo.svg" width="40" height="40" />
+          <!-- <img alt="Logo" class="logo" src="./assets/logo.svg" width="40" height="40" /> -->
           <span class="app-title">{{ APP_TITLE }}</span>
         </div>
         
